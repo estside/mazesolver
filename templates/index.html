@@ -1,0 +1,721 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Maze Solver</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            height: calc(100vh - 40px);
+        }
+
+        .main-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .control-section {
+            
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .control-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .maze-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #grid {
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend {
+            display: flex;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-control {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+            padding: 10px 20px;
+            font-size: 13px;
+        }
+
+        .btn-control:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .slider-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e0);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #6366f1;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        #mazeGrid {
+            display:none;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        #output {
+            background: rgba(248, 250, 252, 0.8);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            color: #4a5568;
+            white-space: pre-wrap;
+            margin-top: 20px;
+            min-height: 60px;
+        }
+
+        .visualization-section {
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            display:none;
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .control-panel {
+                order: -1;
+            }
+        }
+
+        .emoji {
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-panel">
+            <h1 class="section-title">
+                <span class="emoji">🎯</span>
+                Interactive Maze
+            </h1>
+            
+            <div class="maze-container">
+                <div id="grid"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: green;"></div>
+                        <span>Start</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: red;"></div>
+                        <span>End</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: black;"></div>
+                        <span>Wall</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: white; border: 1px solid #ccc;"></div>
+                        <span>Unvisited</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgb(200,200,255);"></div>
+                        <span>Early Visited</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgb(100,100,255);"></div>
+                        <span>Late Visited</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: blue;"></div>
+                        <span>Final Path</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-section">
+                <h3 class="section-title" style="font-size: 20px; margin-bottom: 15px;">
+                    <span class="emoji">📊</span>
+                    Maze Visualization
+                </h3>
+                <div id="mazeGrid"></div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div id="output"></div>
+        </div>
+
+        <div class="control-panel">
+            <h2 class="section-title">
+                <span class="emoji">⚙️</span>
+                Controls
+            </h2>
+
+            <div class="control-section" style="display:flex;justify-content:space-evenly;">
+                <button id="playPauseBtn" class="btn btn-control" onclick="toggleAnimation()">
+                    ⏸️ Pause
+                </button>
+                <button class="btn btn-secondary" onclick="clearMaze()">
+                    🧹 Clear
+                </button>
+            </div>
+
+            <div class="control-section">
+                <h3>Animation Speed:</h3>
+                <div class="slider-container">
+                    <input type="range" id="speedSlider" class="slider" min="1" max="200" value="30" />
+                    <div class="slider-labels">
+                        <span>Fast</span>
+                        <span>Slow</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Algorithm:</h3>
+                <select id="algo">
+                    <option value="bfs">Breadth-First Search (BFS)</option>
+                    <option value="dfs">Depth-First Search (DFS)</option>
+                    <option value="iddfs">Iterative Deepening DFS</option>
+                    <option value="astar">A* Search</option>
+                    <option value="dijkstra">Dijkstra's Algorithm</option>
+
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="solve()">
+                🚀 Solve Maze
+            </button>
+
+            <div class="control-section">
+                <h3>
+                    <span class="emoji">📈</span>
+                    Statistics
+                </h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="nodes-visited">0</div>
+                        <div class="stat-label">Nodes Visited</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="path-length">0</div>
+                        <div class="stat-label">Path Length</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="algorithm-used">-</div>
+                        <div class="stat-label">Algorithm Used</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="status-indicator">
+                            <div class="status-dot"></div>
+                            <div class="status-text">Ready</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
+        
+        async function solve() {
+            const algo = document.getElementById('algo').value;
+        
+            // 🔥 Clear previous visited/path highlights (but keep walls/start/end)
+            clearMaze();
+        
+            const response = await fetch('/solve/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({ maze, start, end, algo })
+            });
+        
+            const data = await response.json();
+            document.getElementById('output').innerText =
+              "Used: " + data.algo_used + "\nPath: " + JSON.stringify(data.path)+"\nTotal no of steps taken:"+data.path.length;
+              
+            // Update statistics
+            document.getElementById('nodes-visited').innerText = data.visited ? data.visited.length : 0;
+            document.getElementById('path-length').innerText = data.path ? data.path.length : 0;
+            document.getElementById('algorithm-used').innerText = data.algo_used || '-';
+        
+            animateVisitedAndPath(data.visited, data.path);
+        }
+        
+        
+        
+        
+        
+        
+        
+        </script>
+        <script>
+            let animationPaused = false;
+let animationDelay = 30;
+
+document.getElementById("speedSlider").addEventListener("input", (e) => {
+    animationDelay = parseInt(e.target.value);
+});
+
+function toggleAnimation() {
+    animationPaused = !animationPaused;
+    document.getElementById("playPauseBtn").innerText = animationPaused ? "▶️ Play" : "⏸️ Pause";
+}
+
+            async function renderMaze(maze, path, start, end, visited) {
+                const grid = document.getElementById("mazeGrid");
+                const rows = maze.length;
+                const cols = maze[0].length;
+                grid.style.gridTemplateColumns = `repeat(${cols}, 30px)`;
+                grid.innerHTML = "";
+            
+                const cellRefs = [];
+            
+                // Create all cells and store references
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        const cell = document.createElement("div");
+                        cell.style.width = "30px";
+                        cell.style.height = "30px";
+                        cell.style.border = "1px solid #aaa";
+            
+                        if (maze[i][j] === 1) {
+                            cell.style.backgroundColor = "black";
+                        } else {
+                            cell.style.backgroundColor = "white";
+                        }
+            
+                        grid.appendChild(cell);
+                        cellRefs.push({ cell, i, j });
+                    }
+                }
+            
+                // Helper to get index in 1D from (i, j)
+                function index(i, j) {
+                    return i * cols + j;
+                }
+            
+                // Animate visited cells one by one
+                // Animate visited cells one by one
+for (let step = 0; step < visited.length; step++) {
+    while (animationPaused) {
+        await new Promise(resolve => setTimeout(resolve, 50));  // wait while paused
+    }
+
+    const [i, j] = visited[step];
+    if ((i === start[0] && j === start[1]) || (i === end[0] && j === end[1])) continue;
+    const idx = index(i, j);
+    const cell = cellRefs[idx].cell;
+    const intensity = step / visited.length;
+    const color = Math.floor(255 - intensity * 150);
+    cell.style.backgroundColor = `rgb(${color},${color},255)`;
+    await new Promise(resolve => setTimeout(resolve, animationDelay));
+}
+
+            
+                // Finally color the path
+                path.forEach(([i, j]) => {
+                    const idx = index(i, j);
+                    cellRefs[idx].cell.style.backgroundColor = "blue";
+                });
+            
+                // Color start and end cells again
+                const startIdx = index(start[0], start[1]);
+                const endIdx = index(end[0], end[1]);
+                cellRefs[startIdx].cell.style.backgroundColor = "green";
+                cellRefs[endIdx].cell.style.backgroundColor = "red";
+            }
+            
+            </script>
+            <script>
+                let rows = 10, cols = 10;
+                let maze = Array.from({length: rows}, () => Array(cols).fill(0));
+                let start = [0, 0], end = [rows - 1, cols - 1];
+                async function animateVisitedAndPath(visited, path) {
+                    // animate visited cells one-by-one
+                    for (let i = 0; i < visited.length; i++) {
+                        const [x, y] = visited[i];
+                        if ((x === start[0] && y === start[1]) || (x === end[0] && y === end[1])) continue;
+                
+                        const cell = document.getElementById(`cell-${x}-${y}`);
+                        const intensity = i / visited.length;
+                        const color = Math.floor(255 - intensity * 150);
+                        cell.style.backgroundColor = `rgb(${color},${color},255)`;  // heatmap
+                
+                        await new Promise(resolve => setTimeout(resolve, animationDelay));
+                    }
+                
+                    // mark path at the end
+                    for (let [x, y] of path) {
+                        if ((x === start[0] && y === start[1]) || (x === end[0] && y === end[1])) continue;
+                        const cell = document.getElementById(`cell-${x}-${y}`);
+                        cell.style.backgroundColor = "blue";
+                    }
+                
+                    // ensure start/end are visible
+                    document.getElementById(`cell-${start[0]}-${start[1]}`).style.backgroundColor = "green";
+                    document.getElementById(`cell-${end[0]}-${end[1]}`).style.backgroundColor = "red";
+                }
+                
+                
+                function drawGrid() {
+                    const grid = document.getElementById("grid");
+                    grid.innerHTML = "";
+                    for (let i = 0; i < rows; i++) {
+                        const row = document.createElement("div");
+                        row.style.display = "flex";
+                        for (let j = 0; j < cols; j++) {
+                            const cell = document.createElement("div");
+                            cell.style.width = "25px";
+                            cell.style.height = "25px";
+                            cell.style.border = "1px solid #ccc";
+                            cell.style.backgroundColor = getColor(i, j);
+                            cell.id = `cell-${i}-${j}`;  // 🔥 unique ID
+                            cell.onclick = () => toggleCell(i, j);
+                            row.appendChild(cell);
+                        }
+                        grid.appendChild(row);
+                    }
+                }
+                
+                
+                function toggleCell(i, j) {
+                    if (isStart(i, j) || isEnd(i, j)) return;
+                    maze[i][j] = maze[i][j] === 0 ? 1 : 0;
+                    drawGrid();
+                }
+                
+                function getColor(i, j) {
+                    if (isStart(i, j)) return "green";
+                    if (isEnd(i, j)) return "red";
+                    return maze[i][j] === 1 ? "black" : "white";
+                }
+                
+                function isStart(i, j) { return i === start[0] && j === start[1]; }
+                function isEnd(i, j) { return i === end[0] && j === end[1]; }
+                function toggleCell(i, j) {
+                    if (isStart(i, j) || isEnd(i, j)) return;
+                
+                    if (maze[i][j] === 1) {
+                        maze[i][j] = 0;  // Turn wall to normal cell
+                    } else if (maze[i][j] >= 0 && maze[i][j] < 5) {
+                        maze[i][j] += 1; // Increment weight
+                    } else {
+                        maze[i][j] = 1;  // Turn back to wall
+                    }
+                
+                    drawGrid();
+                }
+                
+                
+                drawGrid();
+                function clearMaze() {
+                    for (let i = 0; i < rows; i++) {
+                        for (let j = 0; j < cols; j++) {
+                            const cell = document.getElementById(`cell-${i}-${j}`);
+                            if (maze[i][j] === 1) {
+                                cell.style.backgroundColor = "black";
+                            } else if (i === start[0] && j === start[1]) {
+                                cell.style.backgroundColor = "green";
+                            } else if (i === end[0] && j === end[1]) {
+                                cell.style.backgroundColor = "red";
+                            } else {
+                                cell.style.backgroundColor = "white";
+                            }
+                        }
+                    }
+                
+                    document.getElementById("output").innerText = "";
+                    // Reset statistics
+                    document.getElementById('nodes-visited').innerText = '0';
+                    document.getElementById('path-length').innerText = '0';
+                    document.getElementById('algorithm-used').innerText = '-';
+                }
+                
+                </script>
+
+                
+            
+        
+</body>
+
+</html>
