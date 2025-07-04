@@ -24,8 +24,8 @@ SECRET_KEY = 'django-insecure-%#u+5i$82jedkv-f3%t#)$%31pixcxxrgp560m#cjp!n^(oaxi
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+ALLOWED_HOSTS = ['mazesolver-5b66.onrender.com', 'localhost', '127.0.0.1']
 
-ALLOWED_HOSTS = []
 
 
 # Application definition
